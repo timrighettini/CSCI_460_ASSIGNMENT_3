@@ -52,8 +52,8 @@ struct Node
         1.  Create three, two, or one valid nodes based upon board states - there is always a valid move
             a.  Loop through the current board state array, find all areas that are 'W' for isWhitePlayer, or 'B' otherwise
                 and when each player piece is found, do the following:
-                1.  Try to create three points (refer to 3.E and 3.F) from this position for possible piece moves
-                2.  If any point is NULL, do not create the related child node for this piece
+                (1)  Try to create three points (refer to 3.E and 3.F) from this position for possible piece moves
+                (2)  If any point is NULL, do not create the related child node for this piece
         2.  Link all of these new nodes up as children to the parent (store them in the vector)
     C.  GoAlphaBeta(Node *child)
         1.  Go into the next stage of a-B pruning within the child (refer to Wikipedia)
