@@ -1,8 +1,10 @@
 # depslib dependency file v1.0
-1396640609 source:c:\users\czardragon\documents\github\csci_460_assignment_3\assignment_3\main.cpp
+1396654152 source:c:\users\czardragon\documents\github\csci_460_assignment_3\assignment_3\main.cpp
 	<iostream>
 	<vector>
 	<fstream>
 	<stdio.h>
 	<string>
+	<math.h>
+	<limits>
 

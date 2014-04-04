@@ -3,6 +3,8 @@
 #include <fstream>
 #include <stdio.h>
 #include <string>
+#include <math.h>
+#include <limits>
 
 // Global consts
 const int ROWS = 6;
@@ -55,13 +57,13 @@ struct Node
             b.  Nuke old position, move piece to new position, save board state into a node
                 (1).  Use from and to points to make this work (write to position to player letter, and write from position to empty)
 3.  Methods Needed
-    A.  Check Win (Node *)
+    A.  Check Win (Node *) - DONE
         1.  If either player wins, return true
             a.  if (isWhitePlayer  && (any top square is W)) return +1
             b.  if (!isWhitePlayer && (any bot square is B)) return -1
             c.  if (numberBlackPieces == 0) return +1
             d.  if (numberWhitePieces == 0) return -1
-    B.  CreateChildren (Node *current)
+    B.  CreateChildren (Node *current) - DONE
         1.  Create three, two, or one valid nodes based upon board states - there is always a valid move
             a.  Loop through the current board state array, find all areas that are 'W' for isWhitePlayer, or 'B' otherwise
                 and when each player piece is found, do the following:
@@ -70,7 +72,7 @@ struct Node
         2.  Link all of these new nodes up as children to the parent (store them in the vector)
     C.  GoAlphaBeta(Node *child)
         1.  Go into the next stage of a-B pruning within the child (refer to Wikipedia)
-    D.  CreateChildNode(Point from, Point to, char[6][3] boardState)
+    D.  CreateChildNode(Point from, Point to, char[6][3] boardState) - DONE
         1.  create a new Node* based upon the from and to points
         2.  modify the board state appropriately (refer to 2.B.3)
         3.  set isWhitePlayer to !isWhitePlayer
@@ -150,28 +152,116 @@ G.  Do a-B pruning with 6 v 6
 bool LoadFile(Node*); // Load in the initial board state
 bool LoadFileCustom(Node*, std::string); // Load in the initial board state
 void PrintList(Node*); // Print the board state of the node in question
-int CheckWinCondition(Node *);
+int CheckWinCondition(Node *); // Return 1 if white wins, -1 if black wins
 int CheckNumberOfPieces(Node *, char); // Check # of pieces for win cond
 void FindAndMovePieces(Node *); // Loop through the array and find all playable pieces for a player
-void CreateChildren(Node *, Point);
-Point CreateForwardPoint(Node *, Point);
-Point CreateDiagonalPoint(Node *, Point, bool);
-void CreateChild(Node *, Point, Point);
-void Tests(Node *);
-
+void CreateChildren(Node *, Point); // Create all of the valid children of a current node
+Point CreateForwardPoint(Node *, Point); // Will create a forward movement point, if it is valid
+Point CreateDiagonalPoint(Node *, Point, bool); // Will create a left or right diagonal move, if it is valid
+void CreateChild(Node *, Point, Point); // Create a child of a current board state
+void Tests(Node *); // Tests for tree functionality
+int AlphaBetaSearch(Node *, int a, int b);
 
 int main()
 {
     // Create the initial node:
     Node* startNode = new Node();
     startNode->isWhitePlayer = true;
-    LoadFile(startNode);
-    PrintList(startNode);
-
-    Tests(startNode);
+    LoadFileCustom(startNode, "case_1.txt");
+    //PrintList(startNode);
+    //Tests(startNode);
+    printf("AlphaBetaSearch: %d\n", AlphaBetaSearch(startNode, std::numeric_limits<int>::min(), std::numeric_limits<int>::max()));
 
     return 0;
 }
+
+int AlphaBetaSearch(Node *n, int a, int b)
+{
+    // Check the win conditions
+    int winInt = CheckWinCondition(n);
+    if (winInt != 0)
+    {
+        printf("Win value found, returning %d.\n", winInt);
+        return winInt;
+    }
+    else
+    {
+        // Create the children first
+        // Find and Move Pieces finds all of the pieces
+        // of the current player, and then creates children
+        // from all of them.  Then, for each of those children
+        // we recurse through a-B pruning until a <= B
+        FindAndMovePieces(n);
+
+        // Loop through all children and expand through tree
+        for (unsigned int i = 0; i < n->children.size(); i++) // For each child
+        {
+            if (n->isWhitePlayer) // Maximizing Player
+            {
+                if (b > a)
+                {
+                    printf("Player A moves the piece at (%d,%d) to (%d,%d).\n", n->children[i]->movedFrom.r, n->children[i]->movedFrom.c, n->children[i]->movedTo.r, n->children[i]->movedTo.c);
+                    //PrintList(n->children[i]);
+                    a = std::max(a, AlphaBetaSearch(n->children[i], a, b));
+                    if (b <= a) // Start off the print sequence if true
+                    {
+                        printf("Skipping Player A's moves: ");
+                    }
+                }
+                else
+                {
+                    printf("(%d,%d) to (%d,%d)", n->children[i]->movedFrom.r, n->children[i]->movedFrom.c, n->children[i]->movedTo.r, n->children[i]->movedTo.c);
+                    if (i == n->children.size() - 1)
+                    {
+                        printf("; Alpha = %d, Beta = %d.\n", a, b);
+                    }
+                    else
+                    {
+                        printf(", ");
+                    }
+                }
+
+
+            }
+            else // Minimizing Player
+            {
+                if (b > a)
+                {
+                    printf("Player B moves the piece at (%d,%d) to (%d,%d).\n", n->children[i]->movedFrom.r, n->children[i]->movedFrom.c, n->children[i]->movedTo.r, n->children[i]->movedTo.c);
+                    //PrintList(n->children[i]);
+                    b = std::min(b, AlphaBetaSearch(n->children[i], a, b));
+                    if (b <= a) // Start off the print sequence if true
+                    {
+                        printf("Skipping Player B's moves: ");
+                    }
+                }
+                else// Start off the print sequence if true
+                {
+                    printf("(%d,%d) to (%d,%d)", n->children[i]->movedFrom.r, n->children[i]->movedFrom.c, n->children[i]->movedTo.r, n->children[i]->movedTo.c);
+                    if (i == n->children.size() - 1)
+                    {
+                        printf("; Alpha = %d, Beta = %d.\n", a, b);
+                    }
+                    else
+                    {
+                        printf(", ");
+                    }
+                }
+            }
+        }
+
+        // Return the appropriate value
+        if (n->isWhitePlayer)
+        {
+            return a;
+        }
+        else
+        {
+            return b;
+        }
+    }
+}
+
 
 void PrintList(Node *n)
 {
@@ -285,29 +375,8 @@ bool LoadFileCustom(Node *n, std::string fileName)
 
 int CheckWinCondition(Node *n)
 {
-    if (n->isWhitePlayer) // Player 1 win check
-    {
-        for (int i = 0; i < COLS; i++)
-        {
-            if (n->boardState[0][i] == 'W') // If White piece is at top
-            {
-                return 1;
-            }
-        }
-    }
-    else // Player 2 win check
-    {
-        for (int i = 0; i < COLS; i++)
-        {
-            if (n->boardState[5][i] == 'B') // If Black piece is at bottom
-            {
-                return -1;
-            }
-        }
-    }
 
     // Capture win checks
-
     if (CheckNumberOfPieces(n, 'B') == 0) // If all Black Pieces captured, White win
     {
         return 1;
@@ -316,6 +385,23 @@ int CheckWinCondition(Node *n)
     if (CheckNumberOfPieces(n, 'W') == 0) // If all White Pieces captured, Black win
     {
         return -1;
+    }
+
+    // Goal Zone Win Checks
+    for (int i = 0; i < COLS; i++)
+        {
+            if (n->boardState[0][i] == 'W') // If White piece is at top
+            {
+                return 1;
+            }
+        }
+
+    for (int i = 0; i < COLS; i++)
+    {
+            if (n->boardState[5][i] == 'B') // If Black piece is at bottom
+            {
+                return -1;
+            }
     }
 
     return 0;
