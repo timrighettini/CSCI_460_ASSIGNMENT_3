@@ -4,25 +4,35 @@
 #include <stdio.h>
 #include <string>
 
-using namespace std;
+// Global consts
+const int ROWS = 6;
+const int COLS = 3;
 
 struct Point
 {
     int r;
     int c;
+
+    Point(){};
+
+    Point(int row, int col)
+    {
+        this->r = row;
+        this->c = col;
+    }
 };
 
 struct Node
 {
     struct Point movedFrom;  // Point Moved From
     struct Point movedTo;    // Point Moved To
-    vector<Node *> children; // List of Children
-    char boardState[6][3];   // Board State (rows x cols)
+    std::vector<Node *> children; // List of Children
+    char boardState[ROWS][COLS];   // Board State (rows x cols)
     bool isWhitePlayer;      // Is this player 1?
 };
 
 /* Three things I need to check right now:
-1.  Check win condition -> Stops recursion
+1.  Check win condition -> Stops recursion - DONE
     A.  Black Team
     B.  White Team
 2.  Check that movement expansions work for trees
@@ -67,7 +77,7 @@ struct Node
         4.  set newNode->movedFrom = from, newNode->movedTo = to
         5.  set new board state to newNode->boardState
         6.  return this newNode as a ptr
-    E.  CreateForwardPoint(Point p, char[6][3] boardState, bool isWhitePlayer)
+    E.  CreateForwardPoint(Point p, char[6][3] boardState, bool isWhitePlayer) - DONE
         1.  if (isWhitePlayer)
                 if (boardState[p.r - 1][p.c] == 'X')
                     return Point(p.r - 1, p.c)
@@ -78,7 +88,7 @@ struct Node
                     return Point(p.r + 1, p.c)
                 else
                     return NULL; // NOT Valid
-    F.  Create DiagonalPoint(Point p, char[6][3] boardState, bool isLeftMove, bool isWhitePlayer)
+    F.  Create DiagonalPoint(Point p, char[6][3] boardState, bool isLeftMove, bool isWhitePlayer) - DONE
         1.  if (isWhitePlayer)
                 if (isLeftMove)
                     if (p.c - 1 < 0)
@@ -88,7 +98,7 @@ struct Node
                             return NULL
                         else
                             return new Point(p.r - 1, p.c - 1)
-            std::string line = getline(file);    else
+            else
                     if (p.c + 1 > 2)
                         return NULL
                     else
@@ -120,10 +130,67 @@ struct Node
     I.  Check for number of pieces - DONE
 */
 
+/*
+
+-----TEST PLAN-----
+A.  Tree Creation Tests - Do this for WHITE AND BLACK Players
+    1.  Test Forward movement edge case
+    2.  Test Diagonal Movement edge cases
+        A.  OB Left
+        B.  OB Right
+        C.  Do not capture your own piece
+B.  Test one level of expansion from white player
+C.  Test one level of expansion from black player
+D.  Test a 1 v 1 pawn simulation
+E.  Test a full 6 v 6 pawn simulation
+F.  Do a-B prunvoid CreateChild(Node *n, Point startPt, Point endPt)
+{
+    Node *newNode = new Node();
+
+    newNode->movedFrom = startPt;
+    newNode->movedTo = endPt;
+    newNode->isWhitePlayer = !n->isWhitePlayer;
+
+    // Set the new board state to the old board state
+    for (int i = 0; i < ROWS; i++)
+    {
+        for (int j = 0; j < COLS; j++)
+        {
+            newNode->boardState[i][j] = n->boardState[i][j];
+        }
+    }
+
+    // Now do modify the new board state in newNode
+
+    // Set New Position
+    if (n->isWhitePlayer)
+    {
+        newNode->boardState[endPt.r][endPt.c] = 'W';
+    }
+    else
+    {
+        newNode->boardState[endPt.r][endPt.c] = 'B';
+    }
+
+    // Erase Old Position
+    newNode->boardState[startPt.r][startPt.c] = 'X';
+
+    // Push this child into n
+    n->children.push_back(newNode);
+    return;
+}ing with 1 v 1
+G.  Do a-B pruning with 6 v 6
+*/
+
 bool LoadFile(Node*); // Load in the initial board state
 void PrintList(Node*); // Print the board state of the node in question
 int CheckWinCondition(Node *);
-int CheckNumberOfPieces(Node *, char);
+int CheckNumberOfPieces(Node *, char); // Check # of pieces for win cond
+void LookForPieces(Node *n); // Loop through the array and find all playable pieces for a player
+void CreateChildren(Node *n, Point p);
+Point CreateForwardPoint(Node *n, Point p);
+Point CreateDiagonalPoint(Node *n, Point p, bool isLeftMove);
+void CreateChild(Node *n, Point startPt, Point endPt);
 
 int main()
 {
@@ -197,9 +264,9 @@ int main()
 
 void PrintList(Node *n)
 {
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < ROWS; i++)
     {
-        for (int j = 0; j < 3; j++)
+        for (int j = 0; j < COLS; j++)
         {
             std::cout << "[" << n->boardState[i][j] << "]";
         }
@@ -211,17 +278,17 @@ void PrintList(Node *n)
 
 bool LoadFile(Node *n)
 {
-    ifstream file("input.txt");
+    std::ifstream file("input.txt");
 
     bool fullyLoaded = false;
 
     if (file.is_open())
     {
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < ROWS; i++)
         {
             std::string line = "";
             getline(file, line);
-            for (int j = 0; j < 3; j++)
+            for (int j = 0; j < COLS; j++)
             {
                 n->boardState[i][j] = line[j];
             }
@@ -231,9 +298,9 @@ bool LoadFile(Node *n)
     else
     {
         std::cout << "NO FILE FOUND, LOADING IN DEFAULT CONFIGURATION!" << std::endl;
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < ROWS; i++)
         {
-            for (int j = 0; j < 3; j++)
+            for (int j = 0; j < COLS; j++)
             {
                 if (i == 0 || i == 1)
                 {
@@ -261,7 +328,7 @@ int CheckWinCondition(Node *n)
 {
     if (n->isWhitePlayer) // Player 1 win check
     {
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < COLS; i++)
         {
             if (n->boardState[0][i] == 'W')
             {
@@ -271,14 +338,13 @@ int CheckWinCondition(Node *n)
     }
     else // Player 2 win check
     {
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < COLS; i++)
         {
             if (n->boardState[5][i] == 'B')
             {
                 return -1;
             }
         }
-
     }
 
     // Capture win checks
@@ -299,9 +365,9 @@ int CheckWinCondition(Node *n)
 int CheckNumberOfPieces(Node *n, char c)
 {
     int numChars = 0;
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < ROWS; i++)
     {
-        for (int j = 0; j < 3; j++)
+        for (int j = 0; j < COLS; j++)
         {
             if (n->boardState[i][j] == c)
             {
@@ -310,4 +376,202 @@ int CheckNumberOfPieces(Node *n, char c)
         }
     }
     return numChars;
+}
+
+void LookForPieces(Node *n)
+{
+    for (int i = 0; i < ROWS; i++)
+    {
+        for (int j = 0; j < COLS; j++)
+        {
+            Point p(i, j); // Starting point to pass into CreateChildren(...)
+            if (n->isWhitePlayer)
+            {
+                if (n->boardState[i][j] == 'W')
+                {
+                    CreateChildren(n, p);
+                }
+            }
+            else
+            {
+                if (n->boardState[i][j] == 'B')
+                {
+                    CreateChildren(n, p);
+                }
+            }
+        }
+    }
+
+    return;
+}
+
+void CreateChildren(Node *n, Point p)
+{
+    // Try to create left diagonal move
+    Point p_dl = CreateDiagonalPoint(n, p, true);
+    if (!(p_dl.r == -1 && p_dl.c == -1))
+    {
+        CreateChild(n, p, p_dl);
+    }
+
+    // Try to create forward move
+    Point p_f = CreateForwardPoint(n, p);
+    if (!(p_f.r == -1 && p_f.c == -1))
+    {
+        CreateChild(n, p, p_f);
+    }
+
+    // Try to create right diagonal move
+    Point p_dr = CreateDiagonalPoint(n, p, false);
+    if (!(p_dr.r == -1 && p_dr.c == -1))
+    {
+        CreateChild(n, p, p_dr);
+    }
+
+    return;
+}
+
+void CreateChild(Node *n, Point startPt, Point endPt)
+{
+    Node *newNode = new Node();
+
+    newNode->movedFrom = startPt;
+    newNode->movedTo = endPt;
+    newNode->isWhitePlayer = !n->isWhitePlayer;
+
+    // Set the new board state to the old board state
+    for (int i = 0; i < ROWS; i++)
+    {
+        for (int j = 0; j < COLS; j++)
+        {
+            newNode->boardState[i][j] = n->boardState[i][j];
+        }
+    }
+
+    // Now do modify the new board state in newNode
+
+    // Set New Position
+    if (n->isWhitePlayer)
+    {
+        newNode->boardState[endPt.r][endPt.c] = 'W';
+    }
+    else
+    {
+        newNode->boardState[endPt.r][endPt.c] = 'B';
+    }
+
+    // Erase Old Position
+    newNode->boardState[startPt.r][startPt.c] = 'X';
+
+    // Push this child into n
+    n->children.push_back(newNode);
+    return;
+}
+
+Point CreateForwardPoint(Node *n, Point p)
+{
+    if (n->isWhitePlayer) // White pieces move up
+    {
+        if (n->boardState[p.r - 1][p.c] == 'X')
+        {
+            return Point(p.r - 1, p.c);
+        }
+        else
+        {
+            return Point(-1, -1);
+        }
+    }
+    else // Black pieces move down
+    {
+        if (n->boardState[p.r + 1][p.c] == 'X')
+        {
+            return Point(p.r + 1, p.c);
+        }
+        else
+        {
+            return Point(-1, -1);
+        }
+    }
+}
+
+Point CreateDiagonalPoint(Node *n, Point p, bool isLeftMove)
+{
+    if (n->isWhitePlayer)
+    {
+        if (isLeftMove)
+        {
+            if (p.c - 1 < 0)
+            {
+                return Point(-1, -1);
+            }
+            else
+            {
+                if (n->boardState[p.r - 1][p.c - 1] == 'W') // Cannot capture yourself
+                {
+                    return Point(-1, -1);
+                }
+                else
+                {
+                    return Point(p.r - 1, p.c - 1);
+                }
+            }
+        }
+        else
+        {
+            if (p.c + 1 > 2)
+            {
+                return Point(-1, -1);
+            }
+            else
+            {
+                if (n->boardState[p.r - 1][p.c + 1] == 'W') // Cannot capture yourself
+                {
+                    return Point(-1, -1);
+                }
+                else
+                {
+                    return Point(p.r - 1, p.c + 1);
+                }
+            }
+        }
+    }
+    else
+    {
+        if (isLeftMove)
+        {
+            if (p.c - 1 < 0)
+            {
+                return Point(-1, -1);
+            }
+            else
+            {
+                if (n->boardState[p.r + 1][p.c - 1] == 'B') // Cannot capture yourself
+                {
+                    return Point(-1, -1);
+                }
+                else
+                {
+                    return Point(p.r + 1, p.c - 1);
+                }
+            }
+        }
+        else
+        {
+            if (p.c + 1 > 2)
+            {
+                return Point(-1, -1);
+            }
+            else
+            {
+                if (n->boardState[p.r + 1][p.c + 1] == 'B') // Cannot capture yourself
+                {
+                    return Point(-1, -1);
+                }
+                else
+                {
+                    return Point(p.r + 1, p.c + 1);
+                }
+            }
+        }
+    }
 }
