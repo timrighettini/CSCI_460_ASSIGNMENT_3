@@ -134,13 +134,13 @@ struct Node
 
 -----TEST PLAN-----
 A.  Tree Creation Tests - Do this for WHITE AND BLACK Players
-    1.  Test Forward movement edge case
-    2.  Test Diagonal Movement edge cases
-        A.  OB Left
-        B.  OB Right
-        C.  Do not capture your own piece
-B.  Test one level of expansion from white player
-C.  Test one level of expansion from black player
+    1.  Test Forward movement edge case - DONE
+    2.  Test Diagonal Movement edge cases - DONE
+        A.  OB Left  - DONE
+        B.  OB Right - DONE
+        C.  Do not capture your own piece - DONE
+B.  Test one level of expansion from white player - DONE
+C.  Test one level of expansion from black player - DONE
 D.  Test a 1 v 1 pawn simulation
 E.  Test a full 6 v 6 pawn simulation
 F.  Do a-B pruning with 1 v 1
@@ -148,14 +148,17 @@ G.  Do a-B pruning with 6 v 6
 */
 
 bool LoadFile(Node*); // Load in the initial board state
+bool LoadFileCustom(Node*, std::string); // Load in the initial board state
 void PrintList(Node*); // Print the board state of the node in question
 int CheckWinCondition(Node *);
 int CheckNumberOfPieces(Node *, char); // Check # of pieces for win cond
-void LookForPieces(Node *n); // Loop through the array and find all playable pieces for a player
-void CreateChildren(Node *n, Point p);
-Point CreateForwardPoint(Node *n, Point p);
-Point CreateDiagonalPoint(Node *n, Point p, bool isLeftMove);
-void CreateChild(Node *n, Point startPt, Point endPt);
+void FindAndMovePieces(Node *); // Loop through the array and find all playable pieces for a player
+void CreateChildren(Node *, Point);
+Point CreateForwardPoint(Node *, Point);
+Point CreateDiagonalPoint(Node *, Point, bool);
+void CreateChild(Node *, Point, Point);
+void Tests(Node *);
+
 
 int main()
 {
@@ -165,64 +168,7 @@ int main()
     LoadFile(startNode);
     PrintList(startNode);
 
-    // Some Tests
-
-    std::cout << "All conditions should check out" << std::endl;
-
-    // 1. Test all win conditions
-
-    // All P1 Conditions
-    LoadFile(startNode);
-    startNode->boardState[0][0] = 'W';
-    printf("%d\n", CheckWinCondition(startNode));
-
-    LoadFile(startNode);
-    startNode->boardState[0][1] = 'W';
-    printf("%d\n", CheckWinCondition(startNode));
-
-    LoadFile(startNode);
-    startNode->boardState[0][2] = 'W';
-    printf("%d\n", CheckWinCondition(startNode));
-
-    // All P2 Conditions
-    startNode->isWhitePlayer = !startNode->isWhitePlayer;
-    LoadFile(startNode);
-    startNode->boardState[5][0] = 'B';
-    printf("%d\n", CheckWinCondition(startNode));
-
-    LoadFile(startNode);
-    startNode->boardState[5][1] = 'B';
-    printf("%d\n", CheckWinCondition(startNode));
-
-    LoadFile(startNode);
-    startNode->boardState[5][2] = 'B';
-    printf("%d\n", CheckWinCondition(startNode));
-
-    // Check Capture condition wins
-
-    // White Should Win
-    LoadFile(startNode);
-    startNode->boardState[0][0] = 'X';
-    startNode->boardState[0][1] = 'X';
-    startNode->boardState[0][2] = 'X';
-    startNode->boardState[1][0] = 'X';
-    startNode->boardState[1][1] = 'X';
-    startNode->boardState[1][2] = 'X';
-    printf("%d\n", CheckWinCondition(startNode));
-
-    // Black Should Win
-    LoadFile(startNode);
-    startNode->boardState[4][0] = 'X';
-    startNode->boardState[4][1] = 'X';
-    startNode->boardState[4][2] = 'X';
-    startNode->boardState[5][0] = 'X';
-    startNode->boardState[5][1] = 'X';
-    startNode->boardState[5][2] = 'X';
-    printf("%d\n", CheckWinCondition(startNode));
-
-    // There should be NO wins here
-    LoadFile(startNode);
-    printf("%d\n", CheckWinCondition(startNode));
+    Tests(startNode);
 
     return 0;
 }
@@ -289,13 +235,61 @@ bool LoadFile(Node *n)
     return fullyLoaded;
 }
 
+bool LoadFileCustom(Node *n, std::string fileName)
+{
+    std::ifstream file(fileName.c_str());
+
+    bool fullyLoaded = false;
+
+    if (file.is_open())
+    {
+        for (int i = 0; i < ROWS; i++)
+        {
+            std::string line = "";
+            getline(file, line);
+            for (int j = 0; j < COLS; j++)
+            {
+                n->boardState[i][j] = line[j];
+            }
+        }
+        fullyLoaded = true;
+    }
+    else
+    {
+        std::cout << "NO FILE FOUND, LOADING IN DEFAULT CONFIGURATION!" << std::endl;
+        for (int i = 0; i < ROWS; i++)
+        {
+            for (int j = 0; j < COLS; j++)
+            {
+                if (i == 0 || i == 1)
+                {
+                    n->boardState[i][j] = 'B';
+                }
+                else if (i == 4 || i == 5)
+                {
+                    n->boardState[i][j] = 'W';
+                }
+                else
+                {
+                    n->boardState[i][j] = 'X';
+                }
+            }
+        }
+        fullyLoaded = true;
+    }
+
+    file.close();
+
+    return fullyLoaded;
+}
+
 int CheckWinCondition(Node *n)
 {
     if (n->isWhitePlayer) // Player 1 win check
     {
         for (int i = 0; i < COLS; i++)
         {
-            if (n->boardState[0][i] == 'W')
+            if (n->boardState[0][i] == 'W') // If White piece is at top
             {
                 return 1;
             }
@@ -305,7 +299,7 @@ int CheckWinCondition(Node *n)
     {
         for (int i = 0; i < COLS; i++)
         {
-            if (n->boardState[5][i] == 'B')
+            if (n->boardState[5][i] == 'B') // If Black piece is at bottom
             {
                 return -1;
             }
@@ -334,7 +328,7 @@ int CheckNumberOfPieces(Node *n, char c)
     {
         for (int j = 0; j < COLS; j++)
         {
-            if (n->boardState[i][j] == c)
+            if (n->boardState[i][j] == c) // If character found, increment
             {
                 numChars++;
             }
@@ -343,22 +337,15 @@ int CheckNumberOfPieces(Node *n, char c)
     return numChars;
 }
 
-void LookForPieces(Node *n)
+void FindAndMovePieces(Node *n) // Look for white or black pieces
 {
-    for (int i = 0; i < ROWS; i++)
+    if (!n->isWhitePlayer) // Iterate from bottom right to top left
     {
-        for (int j = 0; j < COLS; j++)
+        for (int i = ROWS - 1; i >= 0; i--)
         {
-            Point p(i, j); // Starting point to pass into CreateChildren(...)
-            if (n->isWhitePlayer)
+            for (int j = COLS - 1; j >= 0 ; j--)
             {
-                if (n->boardState[i][j] == 'W')
-                {
-                    CreateChildren(n, p);
-                }
-            }
-            else
-            {
+                Point p(i, j); // Starting point to pass into CreateChildren(...)
                 if (n->boardState[i][j] == 'B')
                 {
                     CreateChildren(n, p);
@@ -366,6 +353,21 @@ void LookForPieces(Node *n)
             }
         }
     }
+    else // Iterate from top left to bottom
+    {
+        for (int i = 0; i < ROWS; i++)
+        {
+            for (int j = 0; j < COLS; j++)
+            {
+                Point p(i, j); // Starting point to pass into CreateChildren(...)
+                if (n->boardState[i][j] == 'W')
+                {
+                    CreateChildren(n, p);
+                }
+            }
+        }
+    }
+
 
     return;
 }
@@ -539,4 +541,367 @@ Point CreateDiagonalPoint(Node *n, Point p, bool isLeftMove)
             }
         }
     }
+}
+
+void Tests(Node *startNode)
+{
+    // Some Tests
+
+    std::cout << "All conditions should check out" << std::endl;
+
+    // 1. Test all win conditions
+
+    // All P1 Conditions
+    LoadFile(startNode);
+    startNode->boardState[0][0] = 'W';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    LoadFile(startNode);
+    startNode->boardState[0][1] = 'W';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    LoadFile(startNode);
+    startNode->boardState[0][2] = 'W';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    // All P2 Conditions
+    startNode->isWhitePlayer = !startNode->isWhitePlayer;
+    LoadFile(startNode);
+    startNode->boardState[5][0] = 'B';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    LoadFile(startNode);
+    startNode->boardState[5][1] = 'B';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    LoadFile(startNode);
+    startNode->boardState[5][2] = 'B';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    // Check Capture condition wins
+
+    // White Should Win
+    LoadFile(startNode);
+    startNode->boardState[0][0] = 'X';
+    startNode->boardState[0][1] = 'X';
+    startNode->boardState[0][2] = 'X';
+    startNode->boardState[1][0] = 'X';
+    startNode->boardState[1][1] = 'X';
+    startNode->boardState[1][2] = 'X';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    // Black Should Win
+    LoadFile(startNode);
+    startNode->boardState[4][0] = 'X';
+    startNode->boardState[4][1] = 'X';
+    startNode->boardState[4][2] = 'X';
+    startNode->boardState[5][0] = 'X';
+    startNode->boardState[5][1] = 'X';
+    startNode->boardState[5][2] = 'X';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    // There should be NO wins here
+    LoadFile(startNode);
+    printf("%d\n\n", CheckWinCondition(startNode));
+
+    // Now Lets do some tests with checking tree expansions
+
+    // Checks moves that are all valid (testing tree child creation, all cases)
+
+    std::cout << "Basic Movement Tests" << std::endl;
+
+    // Test Whites moves
+    LoadFileCustom(startNode, "InputTestAllValidMoves.txt");
+    startNode->isWhitePlayer = true;
+    FindAndMovePieces(startNode);
+
+    // Print out the parent board state, and then the children board states
+    std::cout << "Board of White Player Parent" << std::endl;
+    PrintList(startNode);
+    for (unsigned int i = 0; i < startNode->children.size(); i++)
+    {
+        std::cout << "Board of child " << i << std::endl;
+        PrintList(startNode->children[i]);
+    }
+
+    // Delete all of the children
+    for (unsigned int i = startNode->children.size() - 1; i > 0; i--)
+    {
+        delete startNode->children[i];
+    }
+    startNode->children.clear();
+
+    // Test Blacks moves
+    LoadFileCustom(startNode, "InputTestAllValidMoves.txt");
+    startNode->isWhitePlayer = false;
+    FindAndMovePieces(startNode);
+
+    // Print out the parent board state, and then the children board states
+    std::cout << "Board of Black Player Parent" << std::endl;
+    PrintList(startNode);
+    for (unsigned int i = 0; i < startNode->children.size(); i++)
+    {
+        std::cout << "Board of child " << i << std::endl;
+        PrintList(startNode->children[i]);
+    }
+
+    // Delete all of the children
+    for (unsigned int i = startNode->children.size() - 1; i > 0; i--)
+    {
+        delete startNode->children[i];
+    }
+    startNode->children.clear();
+
+    std::cout << std::endl;
+
+    std::cout << "Illegal Movement Tests (bad moves will not be created)" << std::endl;
+
+    std::cout << "Illegal Forward Movement Tests" << std::endl;
+    // Test Whites moves
+    LoadFileCustom(startNode, "blank.txt");
+    startNode->isWhitePlayer = true;
+
+    startNode->boardState[5][1] = 'W';
+    startNode->boardState[4][1] = 'W';
+
+    FindAndMovePieces(startNode);
+
+    // Print out the parent board state, and then the children board states
+    std::cout << "Board of White Player Parent: W Case" << std::endl;
+    PrintList(startNode);
+    for (unsigned int i = 0; i < startNode->children.size(); i++)
+    {
+        std::cout << "Board of child " << i << std::endl;
+        PrintList(startNode->children[i]);
+    }
+
+    // Delete all of the children
+    for (unsigned int i = startNode->children.size() - 1; i > 0; i--)
+    {
+        delete startNode->children[i];
+    }
+    startNode->children.clear();
+
+    startNode->boardState[4][1] = 'B';
+
+    FindAndMovePieces(startNode);
+
+    // Print out the parent board state, and then the children board states
+    std::cout << "Board of White Player Parent: B Case" << std::endl;
+    PrintList(startNode);
+    for (unsigned int i = 0; i < startNode->children.size(); i++)
+    {
+        std::cout << "Board of child " << i << std::endl;
+        PrintList(startNode->children[i]);
+    }
+
+    // Delete all of the children
+    for (unsigned int i = startNode->children.size() - 1; i > 0; i--)
+    {
+        delete startNode->children[i];
+    }
+    startNode->children.clear();
+
+    // Test Blacks moves
+    LoadFileCustom(startNode, "blank.txt");
+    startNode->isWhitePlayer = false;
+
+    startNode->boardState[0][1] = 'B';
+    startNode->boardState[1][1] = 'B';
+    FindAndMovePieces(startNode);
+
+    // Print out the parent board state, and then the children board states
+    std::cout << "Board of Black Player Parent: B Case" << std::endl;
+    PrintList(startNode);
+    for (unsigned int i = 0; i < startNode->children.size(); i++)
+    {
+        std::cout << "Board of child " << i << std::endl;
+        PrintList(startNode->children[i]);
+    }
+
+    // Delete all of the children
+    for (unsigned int i = startNode->children.size() - 1; i > 0; i--)
+    {
+        delete startNode->children[i];
+    }
+    startNode->children.clear();
+
+    startNode->boardState[1][1] = 'W';
+    FindAndMovePieces(startNode);
+
+     // Print out the parent board state, and then the children board states
+    std::cout << "Board of Black Player Parent: W Case" << std::endl;
+    PrintList(startNode);
+    for (unsigned int i = 0; i < startNode->children.size(); i++)
+    {
+        std::cout << "Board of child " << i << std::endl;
+        PrintList(startNode->children[i]);
+    }
+
+    // Delete all of the children
+    for (unsigned int i = startNode->children.size() - 1; i > 0; i--)
+    {
+        delete startNode->children[i];
+    }
+    startNode->children.clear();
+
+    std::cout << "Illegal Diagonal Movement Tests" << std::endl;
+    // Test Whites moves
+    LoadFileCustom(startNode, "blank.txt");
+    startNode->isWhitePlayer = true;
+
+    startNode->boardState[5][0] = 'W';
+    startNode->boardState[5][2] = 'W';
+
+    FindAndMovePieces(startNode);
+
+    // Print out the parent board state, and then the children board states
+    std::cout << "Board of White Player Parent" << std::endl;
+    PrintList(startNode);
+    for (unsigned int i = 0; i < startNode->children.size(); i++)
+    {
+        std::cout << "Board of child " << i << std::endl;
+        PrintList(startNode->children[i]);
+    }
+
+    // Delete all of the children
+    for (unsigned int i = startNode->children.size() - 1; i > 0; i--)
+    {
+        delete startNode->children[i];
+    }
+    startNode->children.clear();
+
+
+    // Test Blacks moves
+    LoadFileCustom(startNode, "blank.txt");
+    startNode->isWhitePlayer = false;
+
+    startNode->boardState[0][0] = 'B';
+    startNode->boardState[0][2] = 'B';
+
+    FindAndMovePieces(startNode);
+
+    // Print out the parent board state, and then the children board states
+    std::cout << "Board of Black Player Parent" << std::endl;
+    PrintList(startNode);
+    for (unsigned int i = 0; i < startNode->children.size(); i++)
+    {
+        std::cout << "Board of child " << i << std::endl;
+        PrintList(startNode->children[i]);
+    }
+
+    // Delete all of the children
+    for (unsigned int i = startNode->children.size() - 1; i > 0; i--)
+    {
+        delete startNode->children[i];
+    }
+    startNode->children.clear();
+
+    std::cout << "Legal Capture Movement Tests" << std::endl;
+    // Test Whites moves
+    LoadFileCustom(startNode, "blank.txt");
+    startNode->isWhitePlayer = true;
+
+    startNode->boardState[5][0] = 'W';
+    startNode->boardState[5][2] = 'W';
+    startNode->boardState[4][1] = 'B';
+
+    FindAndMovePieces(startNode);
+
+    // Print out the parent board state, and then the children board states
+    std::cout << "Board of White Player Parent: Capture Black" << std::endl;
+    PrintList(startNode);
+    for (unsigned int i = 0; i < startNode->children.size(); i++)
+    {
+        std::cout << "Board of child " << i << std::endl;
+        PrintList(startNode->children[i]);
+    }
+
+    // Delete all of the children
+    for (unsigned int i = startNode->children.size() - 1; i > 0; i--)
+    {
+        delete startNode->children[i];
+    }
+    startNode->children.clear();
+
+
+    // Test Blacks moves
+    LoadFileCustom(startNode, "blank.txt");
+    startNode->isWhitePlayer = false;
+
+    startNode->boardState[0][0] = 'B';
+    startNode->boardState[0][2] = 'B';
+    startNode->boardState[1][1] = 'W';
+
+    FindAndMovePieces(startNode);
+
+    // Print out the parent board state, and then the children board states
+    std::cout << "Board of Black Player Parent: Capture White" << std::endl;
+    PrintList(startNode);
+    for (unsigned int i = 0; i < startNode->children.size(); i++)
+    {
+        std::cout << "Board of child " << i << std::endl;
+        PrintList(startNode->children[i]);
+    }
+
+    // Delete all of the children
+    for (unsigned int i = startNode->children.size() - 1; i > 0; i--)
+    {
+        delete startNode->children[i];
+    }
+    startNode->children.clear();
+
+    std::cout << "Illegal Capture Movement Tests" << std::endl;
+    // Test Whites moves
+    LoadFileCustom(startNode, "blank.txt");
+    startNode->isWhitePlayer = true;
+
+    startNode->boardState[5][0] = 'W';
+    startNode->boardState[5][2] = 'W';
+    startNode->boardState[4][1] = 'W';
+
+    FindAndMovePieces(startNode);
+
+    // Print out the parent board state, and then the children board states
+    std::cout << "Board of White Player Parent: Capture Nothing" << std::endl;
+    PrintList(startNode);
+    for (unsigned int i = 0; i < startNode->children.size(); i++)
+    {
+        std::cout << "Board of child " << i << std::endl;
+        PrintList(startNode->children[i]);
+    }
+
+    // Delete all of the children
+    for (unsigned int i = startNode->children.size() - 1; i > 0; i--)
+    {
+        delete startNode->children[i];
+    }
+    startNode->children.clear();
+
+    // Test Blacks moves
+    LoadFileCustom(startNode, "blank.txt");
+    startNode->isWhitePlayer = false;
+
+    startNode->boardState[0][0] = 'B';
+    startNode->boardState[0][2] = 'B';
+    startNode->boardState[1][1] = 'B';
+
+    FindAndMovePieces(startNode);
+
+    // Print out the parent board state, and then the children board states
+    std::cout << "Board of Black Player Parent: Capture Nothing" << std::endl;
+    PrintList(startNode);
+    for (unsigned int i = 0; i < startNode->children.size(); i++)
+    {
+        std::cout << "Board of child " << i << std::endl;
+        PrintList(startNode->children[i]);
+    }
+
+    // Delete all of the children
+    for (unsigned int i = startNode->children.size() - 1; i > 0; i--)
+    {
+        delete startNode->children[i];
+    }
+    startNode->children.clear();
+
 }
