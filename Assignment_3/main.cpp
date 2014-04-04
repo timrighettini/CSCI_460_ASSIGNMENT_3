@@ -113,11 +113,11 @@ struct Node
                             return NULL
                         else
                             return new Point(p.r + 1, p.c + 1)
-    G.  Read in board state
+    G.  Read in board state - DONE
         1.  Take in initial node, and then set board state of initial node to stuff in txt file
         2.  If no text file, load in the default configuration
-    H.  Print Board
-    I.  Check for number of pieces
+    H.  Print Board - DONE
+    I.  Check for number of pieces - DONE
 */
 
 bool LoadFile(Node*); // Load in the initial board state
@@ -228,19 +228,34 @@ bool LoadFile(Node *n)
         }
         fullyLoaded = true;
     }
+    else
+    {
+        std::cout << "NO FILE FOUND, LOADING IN DEFAULT CONFIGURATION!" << std::endl;
+        for (int i = 0; i < 6; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                if (i == 0 || i == 1)
+                {
+                    n->boardState[i][j] = 'B';
+                }
+                else if (i == 4 || i == 5)
+                {
+                    n->boardState[i][j] = 'W';
+                }
+                else
+                {
+                    n->boardState[i][j] = 'X';
+                }
+            }
+        }
+        fullyLoaded = true;
+    }
 
     file.close();
 
     return fullyLoaded;
 }
-
-/*
-        1.  If either player wins, return true
-            a.  if (isWhitePlayer  && (any top square is W)) return +1
-            b.  if (!isWhitePlayer && (any bot square is B)) return -1
-            c.  if (numberBlackPieces == 0) return +1
-            d.  if (numberWhitePieces == 0) return -1
-*/
 
 int CheckWinCondition(Node *n)
 {
@@ -265,6 +280,8 @@ int CheckWinCondition(Node *n)
         }
 
     }
+
+    // Capture win checks
 
     if (CheckNumberOfPieces(n, 'B') == 0) // If all Black Pieces captured, White win
     {
