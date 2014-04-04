@@ -143,42 +143,7 @@ B.  Test one level of expansion from white player
 C.  Test one level of expansion from black player
 D.  Test a 1 v 1 pawn simulation
 E.  Test a full 6 v 6 pawn simulation
-F.  Do a-B prunvoid CreateChild(Node *n, Point startPt, Point endPt)
-{
-    Node *newNode = new Node();
-
-    newNode->movedFrom = startPt;
-    newNode->movedTo = endPt;
-    newNode->isWhitePlayer = !n->isWhitePlayer;
-
-    // Set the new board state to the old board state
-    for (int i = 0; i < ROWS; i++)
-    {
-        for (int j = 0; j < COLS; j++)
-        {
-            newNode->boardState[i][j] = n->boardState[i][j];
-        }
-    }
-
-    // Now do modify the new board state in newNode
-
-    // Set New Position
-    if (n->isWhitePlayer)
-    {
-        newNode->boardState[endPt.r][endPt.c] = 'W';
-    }
-    else
-    {
-        newNode->boardState[endPt.r][endPt.c] = 'B';
-    }
-
-    // Erase Old Position
-    newNode->boardState[startPt.r][startPt.c] = 'X';
-
-    // Push this child into n
-    n->children.push_back(newNode);
-    return;
-}ing with 1 v 1
+F.  Do a-B pruning with 1 v 1
 G.  Do a-B pruning with 6 v 6
 */
 
