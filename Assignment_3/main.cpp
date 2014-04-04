@@ -1,12 +1,15 @@
 #include <iostream>
 #include <vector>
+#include <fstream>
+#include <stdio.h>
+#include <string>
 
 using namespace std;
 
 struct Point
 {
-    int x;
-    int y;
+    int r;
+    int c;
 };
 
 struct Node
@@ -14,7 +17,7 @@ struct Node
     struct Point movedFrom;  // Point Moved From
     struct Point movedTo;    // Point Moved To
     vector<Node *> children; // List of Children
-    char boardState[3][6];   // Board State
+    char boardState[6][3];   // Board State (rows x cols)
     bool isWhitePlayer;      // Is this player 1?
 };
 
@@ -85,7 +88,7 @@ struct Node
                             return NULL
                         else
                             return new Point(p.r - 1, p.c - 1)
-                else
+            std::string line = getline(file);    else
                     if (p.c + 1 > 2)
                         return NULL
                     else
@@ -110,10 +113,61 @@ struct Node
                             return NULL
                         else
                             return new Point(p.r + 1, p.c + 1)
+    G.  Read in board state
+        1.  Take in initial node, and then set board state of initial node to stuff in txt file
+        2.  If no text file, load in the default configuration
+    H.  Print Board
 */
+
+bool LoadFile(Node*); // Load in the initial board state
+void PrintList(Node*); // Print the board state of the node in question
 
 int main()
 {
-    cout << "Hello world!" << endl;
+    // Create the initial node:
+    Node* startNode = new Node();
+    startNode->isWhitePlayer = true;
+    LoadFile(startNode);
+    PrintList(startNode);
+
     return 0;
+}
+
+void PrintList(Node *n)
+{
+    for (int i = 0; i < 6; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            std::cout << "[" << n->boardState[i][j] << "]";
+        }
+        std::cout << std::endl;
+    }
+
+    return;
+}
+
+bool LoadFile(Node *n)
+{
+    ifstream file("input.txt");
+
+    bool fullyLoaded = false;
+
+    if (file.is_open())
+    {
+        for (int i = 0; i < 6; i++)
+        {
+            std::string line = "";
+            getline(file, line);
+            for (int j = 0; j < 3; j++)
+            {
+                n->boardState[i][j] = line[j];
+            }
+        }
+        fullyLoaded = true;
+    }
+
+    file.close();
+
+    return fullyLoaded;
 }
