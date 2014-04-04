@@ -117,10 +117,13 @@ struct Node
         1.  Take in initial node, and then set board state of initial node to stuff in txt file
         2.  If no text file, load in the default configuration
     H.  Print Board
+    I.  Check for number of pieces
 */
 
 bool LoadFile(Node*); // Load in the initial board state
 void PrintList(Node*); // Print the board state of the node in question
+int CheckWinCondition(Node *);
+int CheckNumberOfPieces(Node *, char);
 
 int main()
 {
@@ -129,6 +132,65 @@ int main()
     startNode->isWhitePlayer = true;
     LoadFile(startNode);
     PrintList(startNode);
+
+    // Some Tests
+
+    std::cout << "All conditions should check out" << std::endl;
+
+    // 1. Test all win conditions
+
+    // All P1 Conditions
+    LoadFile(startNode);
+    startNode->boardState[0][0] = 'W';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    LoadFile(startNode);
+    startNode->boardState[0][1] = 'W';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    LoadFile(startNode);
+    startNode->boardState[0][2] = 'W';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    // All P2 Conditions
+    startNode->isWhitePlayer = !startNode->isWhitePlayer;
+    LoadFile(startNode);
+    startNode->boardState[5][0] = 'B';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    LoadFile(startNode);
+    startNode->boardState[5][1] = 'B';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    LoadFile(startNode);
+    startNode->boardState[5][2] = 'B';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    // Check Capture condition wins
+
+    // White Should Win
+    LoadFile(startNode);
+    startNode->boardState[0][0] = 'X';
+    startNode->boardState[0][1] = 'X';
+    startNode->boardState[0][2] = 'X';
+    startNode->boardState[1][0] = 'X';
+    startNode->boardState[1][1] = 'X';
+    startNode->boardState[1][2] = 'X';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    // Black Should Win
+    LoadFile(startNode);
+    startNode->boardState[4][0] = 'X';
+    startNode->boardState[4][1] = 'X';
+    startNode->boardState[4][2] = 'X';
+    startNode->boardState[5][0] = 'X';
+    startNode->boardState[5][1] = 'X';
+    startNode->boardState[5][2] = 'X';
+    printf("%d\n", CheckWinCondition(startNode));
+
+    // There should be NO wins here
+    LoadFile(startNode);
+    printf("%d\n", CheckWinCondition(startNode));
 
     return 0;
 }
@@ -170,4 +232,65 @@ bool LoadFile(Node *n)
     file.close();
 
     return fullyLoaded;
+}
+
+/*
+        1.  If either player wins, return true
+            a.  if (isWhitePlayer  && (any top square is W)) return +1
+            b.  if (!isWhitePlayer && (any bot square is B)) return -1
+            c.  if (numberBlackPieces == 0) return +1
+            d.  if (numberWhitePieces == 0) return -1
+*/
+
+int CheckWinCondition(Node *n)
+{
+    if (n->isWhitePlayer) // Player 1 win check
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (n->boardState[0][i] == 'W')
+            {
+                return 1;
+            }
+        }
+    }
+    else // Player 2 win check
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (n->boardState[5][i] == 'B')
+            {
+                return -1;
+            }
+        }
+
+    }
+
+    if (CheckNumberOfPieces(n, 'B') == 0) // If all Black Pieces captured, White win
+    {
+        return 1;
+    }
+
+    if (CheckNumberOfPieces(n, 'W') == 0) // If all White Pieces captured, Black win
+    {
+        return -1;
+    }
+
+    return 0;
+}
+
+int CheckNumberOfPieces(Node *n, char c)
+{
+    int numChars = 0;
+    for (int i = 0; i < 6; i++)
+    {
+        for (int j = 0; j < 3; j++)
+        {
+            if (n->boardState[i][j] == c)
+            {
+                numChars++;
+            }
+        }
+    }
+    return numChars;
 }
