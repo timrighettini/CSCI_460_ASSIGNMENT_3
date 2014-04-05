@@ -173,6 +173,8 @@ int main()
     //Tests(startNode);
     int winInt = AlphaBetaSearch(startNode, std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
 
+    std::cout << std::endl << "-----Expansions Complete-----" << std::endl;
+
     std::cout << std::endl << "----------------RESULTS-----------------"<< std::endl;
 
     printf("Answer:  Player A moves the piece at (%d, %d) to (%d, %d).\n",

@@ -61,7 +61,7 @@ A.  Here is a general program flow:
     4.  When the program is complete, the optimal first move for Player A is outputted to the screen, along with the final value
         that the game tree root returns (-1, or +1)
 
-B.  If you want to view the board state along with other begun values, set DEBUG_PRINTS to true.
+B.  If you want to view the board state along with other print values, set DEBUG_PRINTS to true.
 
 ---Final Comments
 
