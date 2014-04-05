@@ -36,7 +36,7 @@ struct Node
     bool isWhitePlayer;      // Is this player 1?
 };
 
-/* Three things I need to check right now:
+/* Design Stuff:
 1.  Check win condition -> Stops recursion - DONE
     A.  Black Team
     B.  White Team
@@ -289,7 +289,6 @@ int AlphaBetaSearch(Node *n, int a, int b)
         }
     }
 }
-
 
 void PrintList(Node *n)
 {
