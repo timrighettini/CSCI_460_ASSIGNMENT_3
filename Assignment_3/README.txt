@@ -39,7 +39,7 @@ C.  The best initial move is stored for Player A when a child of the root return
 D.  Board State:  It is a 6 x 3 array that directly maps to the input.txt structure outlined in the assignment 3 specifications.
     If input.txt does not open, then the initial board state from Figure 1 in the spec will be loaded in.
 
-E.  Player A always goes first, no matter what is loaded from input.txt.
+E.  Player A always goes first, no matter what is loaded from input.txt.  'W' is a white piece, 'B' is a black piece, and 'X' is empty.
     
 
 ---Program Structure---
