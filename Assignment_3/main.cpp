@@ -147,9 +147,7 @@ A.  Tree Creation Tests - Do this for WHITE AND BLACK Players
 B.  Test one level of expansion from white player - DONE
 C.  Test one level of expansion from black player - DONE
 D.  Test a 1 v 1 pawn simulation
-E.  Test a full 6 v 6 pawn simulation
-F.  Do a-B pruning with 1 v 1
-G.  Do a-B pruning with 6 v 6
+E.  Do a-B pruning with 1 v 1
 */
 
 bool LoadFile(Node*); // Load in the initial board state
@@ -163,7 +161,7 @@ Point CreateForwardPoint(Node *, Point); // Will create a forward movement point
 Point CreateDiagonalPoint(Node *, Point, bool); // Will create a left or right diagonal move, if it is valid
 void CreateChild(Node *, Point, Point); // Create a child of a current board state
 void Tests(Node *); // Tests for tree functionality
-int AlphaBetaSearch(Node *, int a, int b);
+int AlphaBetaSearch(Node *, int a, int b); // Search Algorithm + Pruning
 
 int main()
 {
@@ -173,7 +171,7 @@ int main()
     LoadFileCustom(startNode, "input.txt");
     if (DEBUG_PRINTS) PrintList(startNode);
     //Tests(startNode);
-    int winInt =  AlphaBetaSearch(startNode, std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+    int winInt = AlphaBetaSearch(startNode, std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
 
     std::cout << std::endl << "----------------RESULTS-----------------"<< std::endl;
 
