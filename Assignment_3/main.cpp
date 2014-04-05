@@ -10,6 +10,8 @@
 const int ROWS = 6;
 const int COLS = 3;
 
+const bool DEBUG_PRINTS = true;
+
 struct Point
 {
     int r;
@@ -28,6 +30,7 @@ struct Node
 {
     struct Point movedFrom;  // Point Moved From
     struct Point movedTo;    // Point Moved To
+    Node *whiteWinNode;      // Will be set the first time a node receives a "1" from a child
     std::vector<Node *> children; // List of Children
     char boardState[ROWS][COLS];   // Board State (rows x cols)
     bool isWhitePlayer;      // Is this player 1?
@@ -167,10 +170,19 @@ int main()
     // Create the initial node:
     Node* startNode = new Node();
     startNode->isWhitePlayer = true;
-    LoadFileCustom(startNode, "case_1.txt");
-    //PrintList(startNode);
+    LoadFileCustom(startNode, "case_2.txt");
+    if (DEBUG_PRINTS) PrintList(startNode);
     //Tests(startNode);
-    printf("AlphaBetaSearch: %d\n", AlphaBetaSearch(startNode, std::numeric_limits<int>::min(), std::numeric_limits<int>::max()));
+    int winInt =  AlphaBetaSearch(startNode, std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
+
+    std::cout << std::endl << "----------------RESULTS-----------------"<< std::endl;
+
+    printf("Answer:  Player A moves the piece at (%d, %d) to (%d, %d).\n",
+           startNode->whiteWinNode->movedFrom.r, startNode->whiteWinNode->movedFrom.c,
+           startNode->whiteWinNode->movedTo.r, startNode->whiteWinNode->movedTo.c
+    );
+
+    std::cout << "Alpha Beta Search Result: " << winInt << std::endl;
 
     return 0;
 }
@@ -181,7 +193,7 @@ int AlphaBetaSearch(Node *n, int a, int b)
     int winInt = CheckWinCondition(n);
     if (winInt != 0)
     {
-        printf("Win value found, returning %d.\n", winInt);
+        if (DEBUG_PRINTS) printf("Win value found, returning %d.\n", winInt);
         return winInt;
     }
     else
@@ -201,9 +213,18 @@ int AlphaBetaSearch(Node *n, int a, int b)
                 if (b > a)
                 {
                     printf("Player A moves the piece at (%d,%d) to (%d,%d).\n", n->children[i]->movedFrom.r, n->children[i]->movedFrom.c, n->children[i]->movedTo.r, n->children[i]->movedTo.c);
-                    //PrintList(n->children[i]);
+                    if (DEBUG_PRINTS) PrintList(n->children[i]);
                     a = std::max(a, AlphaBetaSearch(n->children[i], a, b));
-                    if (b <= a) // Start off the print sequence if true
+
+                    if ((a == 1 || i == n->children.size() - 1) && n->whiteWinNode == NULL)
+                    {
+                        // Get first reference to winning move or just the last move if there is no good one
+                        // This is done specifically for White Player, or P1, to satisfy the first move problem
+                        // as outlined in the assignment 3 document
+                        n->whiteWinNode = n->children[i];
+                    }
+
+                    if (b <= a && i != n->children.size() - 1) // Start off the print sequence if true
                     {
                         printf("Skipping Player A's moves: ");
                     }
@@ -220,17 +241,24 @@ int AlphaBetaSearch(Node *n, int a, int b)
                         printf(", ");
                     }
                 }
-
-
             }
             else // Minimizing Player
             {
                 if (b > a)
                 {
                     printf("Player B moves the piece at (%d,%d) to (%d,%d).\n", n->children[i]->movedFrom.r, n->children[i]->movedFrom.c, n->children[i]->movedTo.r, n->children[i]->movedTo.c);
-                    //PrintList(n->children[i]);
+                    if (DEBUG_PRINTS) PrintList(n->children[i]);
                     b = std::min(b, AlphaBetaSearch(n->children[i], a, b));
-                    if (b <= a) // Start off the print sequence if true
+
+                    if ((b == 1 || i == n->children.size() - 1) && n->whiteWinNode == NULL)
+                    {
+                        // Get first reference to winning move or just the last move if there is no good one
+                        // This is done specifically for White Player, or P1, to satisfy the first move problem
+                        // as outlined in the assignment 3 document
+                        n->whiteWinNode = n->children[i];
+                    }
+
+                    if (b <= a && i != n->children.size() - 1) // Start off the print sequence if true
                     {
                         printf("Skipping Player B's moves: ");
                     }
@@ -248,6 +276,8 @@ int AlphaBetaSearch(Node *n, int a, int b)
                     }
                 }
             }
+
+            //printf("Alpha: %d, Beta: %d\n", a, b);
         }
 
         // Return the appropriate value
@@ -389,19 +419,19 @@ int CheckWinCondition(Node *n)
 
     // Goal Zone Win Checks
     for (int i = 0; i < COLS; i++)
+    {
+        if (n->boardState[0][i] == 'W') // If White piece is at top
         {
-            if (n->boardState[0][i] == 'W') // If White piece is at top
-            {
-                return 1;
-            }
+            return 1;
         }
+    }
 
     for (int i = 0; i < COLS; i++)
     {
-            if (n->boardState[5][i] == 'B') // If Black piece is at bottom
-            {
-                return -1;
-            }
+        if (n->boardState[5][i] == 'B') // If Black piece is at bottom
+        {
+            return -1;
+        }
     }
 
     return 0;
@@ -491,6 +521,7 @@ void CreateChild(Node *n, Point startPt, Point endPt)
     newNode->movedFrom = startPt;
     newNode->movedTo = endPt;
     newNode->isWhitePlayer = !n->isWhitePlayer;
+    newNode->whiteWinNode = NULL;
 
     // Set the new board state to the old board state
     for (int i = 0; i < ROWS; i++)
@@ -989,5 +1020,4 @@ void Tests(Node *startNode)
         delete startNode->children[i];
     }
     startNode->children.clear();
-
 }
