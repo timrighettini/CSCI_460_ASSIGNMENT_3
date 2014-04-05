@@ -10,7 +10,7 @@
 const int ROWS = 6;
 const int COLS = 3;
 
-const bool DEBUG_PRINTS = true;
+const bool DEBUG_PRINTS = false;
 
 struct Point
 {
@@ -170,7 +170,7 @@ int main()
     // Create the initial node:
     Node* startNode = new Node();
     startNode->isWhitePlayer = true;
-    LoadFileCustom(startNode, "case_2.txt");
+    LoadFileCustom(startNode, "input.txt");
     if (DEBUG_PRINTS) PrintList(startNode);
     //Tests(startNode);
     int winInt =  AlphaBetaSearch(startNode, std::numeric_limits<int>::min(), std::numeric_limits<int>::max());
